@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.33213.308
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "C++_Object_Tracking", "C++_Object_Tracking.vcxproj", "{B5EA29DA-5F88-4999-95CB-5F211E5E2EB3}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B5EA29DA-5F88-4999-95CB-5F211E5E2EB3}.Debug|x64.ActiveCfg = Debug|x64
+		{B5EA29DA-5F88-4999-95CB-5F211E5E2EB3}.Debug|x64.Build.0 = Debug|x64
+		{B5EA29DA-5F88-4999-95CB-5F211E5E2EB3}.Debug|x86.ActiveCfg = Debug|Win32
+		{B5EA29DA-5F88-4999-95CB-5F211E5E2EB3}.Debug|x86.Build.0 = Debug|Win32
+		{B5EA29DA-5F88-4999-95CB-5F211E5E2EB3}.Release|x64.ActiveCfg = Release|x64
+		{B5EA29DA-5F88-4999-95CB-5F211E5E2EB3}.Release|x64.Build.0 = Release|x64
+		{B5EA29DA-5F88-4999-95CB-5F211E5E2EB3}.Release|x86.ActiveCfg = Release|Win32
+		{B5EA29DA-5F88-4999-95CB-5F211E5E2EB3}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {9D990DD4-062D-4D25-A4D2-2EC33FF4B700}
+	EndGlobalSection
+EndGlobal
