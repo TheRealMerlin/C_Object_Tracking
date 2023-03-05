@@ -4,4 +4,8 @@
     <LocalDebuggerCommandArguments>-n</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LocalDebuggerCommandArguments>"C:\Users\Ian\Desktop\Programs\Object Tracking\test.mov" -n 2 -px 146.8 -d 200 -s</LocalDebuggerCommandArguments>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
 </Project>
