@@ -1,7 +1,9 @@
 #include <iostream>
 #include <fstream>
+#include <filesystem>
 #include <string>
 #include <vector>
+#include <chrono>
 #include <arrow/api.h>
 #include <arrow/io/api.h>
 #include <parquet/arrow/writer.h>
@@ -10,9 +12,14 @@
 #include <opencv2/tracking.hpp>
 #include <opencv2/core.hpp>
 
+/*
+	Current run-time against test.mov (30 s, 6.66 fps, 201 frames, 2 droplets, ~146.8 px between plates, 200 microns speration)
+	is (9.32228 s w/ --show : 7.1656 s w/o --show)
+*/
+
 // Global variables
 std::string PATH = "";
-int NUM_DROPLETS = 0;
+int NUM_DROPLETS = 0, NUM_FRAMES = 0;
 double PX_DISTANCE = 0.0, DISTANCE = 0.0;
 bool TIMEIT = false, SHOW = false;
 
@@ -97,6 +104,42 @@ int parse_args(int argc, char** argv) {
 	return 0;
 }
 
+// Store data to parquet
+arrow::Status store_data(std::string &filepath , std::vector<std::vector<double>> &x, std::vector<std::vector<double>> &y) {
+	// Create fields (column names) and array_vector (data)
+	arrow::FieldVector fields;
+	arrow::ArrayVector array_vector;
+
+	// Store data into arrow::Table for output
+	for(int i = 0; i < NUM_DROPLETS; i++) {
+		// Create fields for schema (how to store the data)
+		fields.push_back(arrow::field("x_" + std::to_string(i), arrow::float64()));
+		fields.push_back(arrow::field("y_" + std::to_string(i), arrow::float64()));
+
+		// Store x[i] and y[i] into arrow::Array
+		arrow::DoubleBuilder dbuilder_x;
+		arrow::DoubleBuilder dbuilder_y;
+		std::shared_ptr<arrow::Array> x_array;
+		std::shared_ptr<arrow::Array> y_array;
+		ARROW_RETURN_NOT_OK(dbuilder_x.AppendValues(x[i]));
+		ARROW_RETURN_NOT_OK(dbuilder_y.AppendValues(y[i]));
+		ARROW_RETURN_NOT_OK(dbuilder_x.Finish(&x_array));
+		ARROW_RETURN_NOT_OK(dbuilder_y.Finish(&y_array));
+
+		// Append x and y arrays to array_vector
+		array_vector.push_back(x_array);
+		array_vector.push_back(y_array);
+	}
+	std::shared_ptr<arrow::Schema> schema = arrow::schema(fields);
+	std::shared_ptr<arrow::Table> table = arrow::Table::Make(schema, array_vector);
+
+	// Write table to output file
+	std::shared_ptr<arrow::io::FileOutputStream> outfile;
+	ARROW_ASSIGN_OR_RAISE(outfile, arrow::io::FileOutputStream::Open(filepath));
+	ARROW_RETURN_NOT_OK(parquet::arrow::WriteTable(*table, arrow::default_memory_pool(), outfile, 3));
+	return outfile->Close();
+}
+
 // Program entry
 int main(int argc, char** argv) {
 	// Parse arguements and ends program if error
@@ -117,27 +160,32 @@ int main(int argc, char** argv) {
 	}
 
 	// Gets number of frames in video
-	int num_frames = (int)video.get(cv::CAP_PROP_FRAME_COUNT);
+	NUM_FRAMES = (int)video.get(cv::CAP_PROP_FRAME_COUNT);
 
-	// Creates a vector of trackers and bboxes
+	// Initializes a vector of trackers and bboxes
 	std::vector<cv::Ptr<cv::Tracker>> trackers;
 	std::vector<cv::Rect> bboxes;
 	for(int i = 0; i < NUM_DROPLETS; i++) {
+		// Create tracker and bbox
 		trackers.push_back(cv::TrackerCSRT::create());
 		bboxes.push_back(cv::selectROI(frame, false));
+
+		// Initialize tracker
+		trackers[i]->init(frame, bboxes[i]);
 	}
 
 	// Close select ROI window
 	cv::destroyAllWindows();
 
-	// Initialize trackers w/ respective bboxes
-	for(int i = 0; i < NUM_DROPLETS; i++) {
-		trackers[i]->init(frame, bboxes[i]);
-	}
-
 	// Initialize 2-D array of x and y values
-	std::vector<std::vector<double>> x(NUM_DROPLETS, std::vector<double>(num_frames, 0.0));
-	std::vector<std::vector<double>> y(NUM_DROPLETS, std::vector<double>(num_frames, 0.0));
+	std::vector<std::vector<double>> x(NUM_DROPLETS, std::vector<double>(NUM_FRAMES, 0.0));
+	std::vector<std::vector<double>> y(NUM_DROPLETS, std::vector<double>(NUM_FRAMES, 0.0));
+
+	// Time the algorithm
+	std::chrono::system_clock::time_point start_time;
+	if(TIMEIT) {
+		start_time = std::chrono::system_clock::now();
+	}
 
 	// Store first frame values
 	for(int i = 0; i < NUM_DROPLETS; i++) {
@@ -146,7 +194,7 @@ int main(int argc, char** argv) {
 	}
 
 	// Tracking loop
-	for(int j = 1; j < num_frames; j++) {
+	for(int j = 1; j < NUM_FRAMES; j++) {
 		// Read next frame
 		video.read(frame);
 		
@@ -176,33 +224,22 @@ int main(int argc, char** argv) {
 		}
 	}
 
-	// Create schema for output file
-	arrow::FieldVector fields;
-	for(int i = 0; i < NUM_DROPLETS; i++) {
-		fields.push_back(arrow::field("x_" + std::to_string(i), arrow::float64()));
-		fields.push_back(arrow::field("y_" + std::to_string(i), arrow::float64()));
+	// Store data in paruqet file
+	std::string out_file_name = std::filesystem::path(PATH).stem().string() + "_out.parquet";
+	arrow::Status st = store_data(out_file_name, x, y);
+	if(!st.ok()) {
+		std::cerr << st << std::endl;
 	}
-	std::shared_ptr<arrow::Schema> schema = arrow::schema(fields);
 
-	// Store data into arrow::Table for output
-	arrow::ArrayVector array_vector;
-	for(int i = 0; i < NUM_DROPLETS; i++) {
-		arrow::DoubleBuilder dbuilder;
-		dbuilder.AppendValues(x[i]);
-		std::shared_ptr<arrow::DoubleArray> data_array;
-		dbuilder.Finish(&data_array);
-		array_vector.push_back(data_array);
+	// Display total runtime of algorithm
+	std::chrono::system_clock::time_point end_time;
+	if(TIMEIT) {
+		end_time = std::chrono::system_clock::now();
+		std::chrono::duration<double> elapsed_seconds = end_time - start_time;
+		std::cerr << "elapsed time: " << elapsed_seconds.count() << " s" << std::endl;
 	}
-	std::cerr << array_vector.at(0) << std::endl;
-	std::shared_ptr<arrow::Table> table = arrow::Table::Make(schema, array_vector);
-
-	// Write table to output file
-	std::shared_ptr<arrow::io::FileOutputStream> outfile;
-	PARQUET_THROW_NOT_OK(arrow::io::FileOutputStream::Open("test.parquet", &outfile));
-	PARQUET_THROW_NOT_OK(parquet::arrow::WriteTable(*table.get(), arrow::default_memory_pool(), outfile, 3));
 
 	// Garbage collection
-	outfile->Close();
 	video.release();
 	cv::destroyAllWindows();
 
