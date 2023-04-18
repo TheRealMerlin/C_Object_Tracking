@@ -1,4 +1,2 @@
 .vs/
-x64/Release/*
-!x64/Release/*.exe
-!x64/Release/*.dll
+x64/
