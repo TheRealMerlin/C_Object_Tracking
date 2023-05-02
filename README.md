@@ -1,3 +1,11 @@
+# Compile
+## Linux (Fedora)
+``` console
+dnf install opencv-devel libarrow-devel
+cmake .
+make
+```
+
 # How to use the program
 ## x64/Release/C++_Object_Tracking.exe
 The program is intended to run in command line with the following commands:
