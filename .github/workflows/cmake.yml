@@ -18,6 +18,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - run: sudo apt install -y -V ca-certificates lsb-release wget
+    - run: wget https://apache.jfrog.io/artifactory/arrow/$(lsb_release --id --short | tr 'A-Z' 'a-z')/apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb
+    - run: sudo apt install -y -V ./apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb
     - run: sudo apt-get update && sudo apt-get install -yq libopencv-dev libarrow-dev
     - uses: actions/checkout@v3
 
