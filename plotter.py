@@ -44,7 +44,7 @@ def plotter(DATA_OUT_FILE, FPS):
             a_y[i].append((v_y[i][j] - v_y[i][j - 1]) / FPS)
 
     # Create list of time corresponding to each frame
-    times = [i * FPS for i in range(1, numRows + 1)]
+    times = [i / FPS for i in range(numRows)]
 
     # Create a_x(t) and a_y(t) plots
     for i in range(numDroplets):
