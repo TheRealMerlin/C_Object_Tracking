@@ -32,16 +32,16 @@ def plotter(DATA_OUT_FILE, FPS):
     v_y = [[0] for i in range(numDroplets)]
     for i in range(numDroplets):
         for j in range(1, numRows):
-            v_x[i].append((xVals[i][j] - xVals[i][j - 1]) / FPS)
-            v_y[i].append((yVals[i][j] - yVals[i][j - 1]) / FPS)
+            v_x[i].append((xVals[i][j] - xVals[i][j - 1]) * FPS)
+            v_y[i].append((yVals[i][j] - yVals[i][j - 1]) * FPS)
 
     # Get a_x and a_y
     a_x = [[0] for i in range(numDroplets)]
     a_y = [[0] for i in range(numDroplets)]
     for i in range(numDroplets):
         for j in range(1, numRows):
-            a_x[i].append((v_x[i][j] - v_x[i][j - 1]) / FPS)
-            a_y[i].append((v_y[i][j] - v_y[i][j - 1]) / FPS)
+            a_x[i].append((v_x[i][j] - v_x[i][j - 1]) * FPS)
+            a_y[i].append((v_y[i][j] - v_y[i][j - 1]) * FPS)
 
     # Create list of time corresponding to each frame
     times = [i / FPS for i in range(numRows)]
